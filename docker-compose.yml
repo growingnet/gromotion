@@ -1,0 +1,49 @@
+services:
+  # Not started by default: the app normally reads a hosted cluster, configured
+  # by MONGO_URI in backend/.env. This is only for working offline -- start it
+  # with `--profile local-db` and point MONGO_URI at mongodb://mongo:27017.
+  mongo:
+    image: mongo:7
+    container_name: gromotion-mongo
+    profiles: ["local-db"]
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build: ./backend
+    container_name: gromotion-backend
+    restart: unless-stopped
+    # The same file the backend reads when run outside Docker, so the
+    # connection string has exactly one home. Not baked into the image -- it is
+    # excluded by .dockerignore and injected here at run time.
+    env_file:
+      - path: ./backend/.env
+        required: false
+    ports:
+      - "8000:8000"
+    volumes:
+      # Bind-mounted so --reload picks up edits without a rebuild.
+      - ./backend/app:/srv/app
+      - ./backend/ingest:/srv/ingest
+
+  frontend:
+    build: ./frontend
+    container_name: gromotion-frontend
+    restart: unless-stopped
+    environment:
+      # vite.config.ts proxies /api here, keeping the browser same-origin.
+      VITE_API_TARGET: http://backend:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/srv/src
+      - ./frontend/public:/srv/public
+      - ./frontend/index.html:/srv/index.html
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
