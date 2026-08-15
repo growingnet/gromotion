@@ -27,7 +27,12 @@ def get_client() -> MongoClient:
     global _client
     if _client is None:
         settings = get_settings()
-        _client = MongoClient(settings.mongo_uri, tz_aware=True)
+        # Bounded so an unreachable cluster fails fast instead of stalling
+        # startup for pymongo's 30s default, which would fail a platform
+        # healthcheck before the app ever answers.
+        _client = MongoClient(
+            settings.mongo_uri, tz_aware=True, serverSelectionTimeoutMS=5000
+        )
     return _client
 
 
