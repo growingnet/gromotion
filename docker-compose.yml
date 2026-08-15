@@ -16,6 +16,9 @@ services:
     build: ./backend
     container_name: gromotion-backend
     restart: unless-stopped
+    # The image's own CMD is the production one. Development adds --reload,
+    # which pairs with the bind mounts below.
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     # The same file the backend reads when run outside Docker, so the
     # connection string has exactly one home. Not baked into the image -- it is
     # excluded by .dockerignore and injected here at run time.

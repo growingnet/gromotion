@@ -14,4 +14,6 @@ RUN uv sync --frozen --extra dev
 ENV PATH="/srv/.venv/bin:$PATH"
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Shell form so $PORT expands: hosted platforms assign the port at run time.
+# docker-compose overrides this with a --reload variant for local development.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
