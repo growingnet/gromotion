@@ -1,49 +1,7 @@
+import { CopyButton } from "../components/CopyButton";
 import { SiteHeader } from "../components/SiteHeader";
+import { PAPERS } from "../lib/papers";
 import { href } from "../routes";
-
-/**
- * Papers behind the growth methods this site replays, newest first. Kept as
- * data so a new entry is one object, not a new block of markup.
- */
-type Paper = {
-  title: string;
-  authors: string;
-  year: string;
-  venue: string;
-  url: string;
-  /** Optional: not every paper has a preprint up yet. */
-  arxiv?: string;
-};
-
-const PAPERS: Paper[] = [
-  {
-    title:
-      "Tackling brain signal inter-subject variability with adaptive neural architectures",
-    authors:
-      "Velut, S., Douka, S., Rudkiewicz, T., Davey, A., Rivaud, S., Landes, F., Mille, J., Charpiat, G., Chevallier, S., Corsi, M.-C., Dehais, F.",
-    year: "2026",
-    venue: "International Joint Conference on Neural Networks (IJCNN)",
-    url: "http://linklings.s3.amazonaws.com/organizations/WCCI/wcci2026/submissions/stype114/GycdL-ijcnn_pap3256s2.pdf",
-  },
-  {
-    title: "Growth strategies for arbitrary DAG neural architectures",
-    authors:
-      "Douka, S., Verbockhaven, M., Rudkiewicz, T., Rivaud, S., Landes, F., Chevallier, S., Charpiat, G.",
-    year: "2025",
-    venue: "European Symposium on Artificial Neural Networks (ESANN)",
-    url: "https://www.esann.org/sites/default/files/proceedings/2025/ES2025-112.pdf",
-    arxiv: "https://arxiv.org/abs/2501.12690",
-  },
-  {
-    title:
-      "Growing tiny networks: Spotting expressivity bottlenecks and fixing them optimally",
-    authors: "Verbockhaven, M., Rudkiewicz, T., Chevallier, S., Charpiat, G.",
-    year: "2024",
-    venue: "Transactions on Machine Learning Research (TMLR)",
-    url: "https://openreview.net/forum?id=hbtG6s6e7r",
-    arxiv: "https://arxiv.org/abs/2405.19816",
-  },
-];
 
 export function Landing() {
   return (
@@ -178,9 +136,16 @@ export function Landing() {
           <ol className="flex flex-col gap-5 pt-1">
             {PAPERS.map((paper) => (
               <li key={paper.title} className="flex flex-col gap-1">
-                <Link href={paper.url}>
-                  <span className="text-[var(--color-ink)]">{paper.title}</span>
-                </Link>
+                <div className="flex items-start justify-between gap-3">
+                  <Link href={paper.url}>
+                    <span className="text-[var(--color-ink)]">{paper.title}</span>
+                  </Link>
+                  <CopyButton
+                    text={paper.bibtex}
+                    label="Copy BibTeX"
+                    describes={paper.title}
+                  />
+                </div>
                 <span>
                   {paper.authors} ({paper.year}). <em>{paper.venue}</em>.
                 </span>
