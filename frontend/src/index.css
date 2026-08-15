@@ -84,3 +84,64 @@ body {
     animation: none;
   }
 }
+
+/*
+ * Landing hero: the mark performing the thing the site is about. Each element
+ * carries its own animation-delay so one keyframe set drives the whole
+ * sequence, and `transform-box: fill-box` is what makes `center` mean the
+ * shape's own centre rather than the SVG viewport's.
+ */
+@keyframes hero-grow {
+  0%,
+  6% {
+    transform: scale(0.15);
+    opacity: 0;
+  }
+  20%,
+  84% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  96%,
+  100% {
+    transform: scale(0.15);
+    opacity: 0;
+  }
+}
+.hero-grow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hero-grow 6s cubic-bezier(0.2, 0.9, 0.3, 1.2) infinite backwards;
+}
+
+/*
+ * Edges only fade. Scaling a line grows it out from its own midpoint, which
+ * leaves it visibly short of the two nodes it is supposed to join for the whole
+ * of its entrance - it reads as a broken graph rather than a growing one.
+ */
+@keyframes hero-fade {
+  0%,
+  6% {
+    opacity: 0;
+  }
+  20%,
+  84% {
+    opacity: 1;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+.hero-edge {
+  animation: hero-fade 6s ease-in-out infinite backwards;
+}
+
+/* Nothing should move if the visitor asked for stillness; show the full graph. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-grow,
+  .hero-edge {
+    animation: none;
+    opacity: 1;
+  }
+}

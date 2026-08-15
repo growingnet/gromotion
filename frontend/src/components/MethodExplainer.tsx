@@ -31,7 +31,7 @@ export function MethodExplainer() {
               Instead of fixing an architecture up front, <strong>gromo</strong> starts
               from a minimal network and adds capacity during training. At each{" "}
               <em>growth step</em> it measures where the model is held back by its own
-              size — the <em>expressivity bottleneck</em> — and adds neurons exactly
+              size, the <em>expressivity bottleneck</em>, and adds neurons exactly
               there.
             </p>
           </div>
@@ -40,10 +40,9 @@ export function MethodExplainer() {
             <p className="mb-1 font-semibold">What you are looking at</p>
             <p className="text-[var(--color-ink-2)]">
               Each panel is one growing sub-network: a directed graph from{" "}
-              <code>start</code> to <code>end</code>. A <strong>node</strong> is a layer
+              <code>start</code> to <code>end</code>. A <strong>node</strong> is a hidden state
               and its disc scales with channel count; an <strong>edge</strong> is a
-              convolution between layers. Faint dashed rings mark space reserved for
-              structure that appears later.
+              convolution between layers.
             </p>
           </div>
 
@@ -54,15 +53,15 @@ export function MethodExplainer() {
             </p>
             <ul className="space-y-1 text-[var(--color-ink-2)]">
               <Legend color="var(--color-grown)">
-                <strong>new structure</strong> — a node or connection that did not
-                exist before
+                <strong>new structure</strong>: A node or connection that did not
+                exist before.
               </Legend>
               <Legend color="var(--color-updated)">
-                <strong>widened</strong> — an existing node gained channels. Same
-                topology, more capacity; the halo marks the step it happened.
+                <strong>widened</strong>: An existing node gained channels. Same
+                topology, more capacity.
               </Legend>
               <Legend color="var(--color-idle)">
-                unchanged. Edges of a graph that grew are all refit, so they brighten
+                unchanged: Edges of a graph that grew are all refit, so they brighten
                 slightly without taking on a colour of their own.
               </Legend>
             </ul>
