@@ -6,10 +6,16 @@
 
 <p align="center"><strong>Watch your network grow.</strong></p>
 
+<p align="center">
+  <a href="https://github.com/growingnet/gromotion/actions/workflows/deploy.yml">
+    <img alt="Deploy frontend to GitHub Pages" src="https://github.com/growingnet/gromotion/actions/workflows/deploy.yml/badge.svg?branch=master">
+  </a>
+</p>
+
 An interactive replay of [gromo](https://github.com/growingnet/gromo) training runs: the
 network's architecture grows step by step, alongside the training curves.
 
-Saved runs are ingested once, offline, into MongoDB. The website then replays them —
+Saved runs are ingested once, offline, into MongoDB. The website then replays them -
 scrub, pause, and change speed over the global growth step.
 
 ```
@@ -20,102 +26,57 @@ scrub, pause, and change speed over the global growth step.
 
 The web app **never talks to wandb** and holds no wandb credentials.
 
----
-
-## Quick start
-
-The runs live in a hosted MongoDB cluster; the app only reads from it. Point it
-at yours:
-
-```bash
-cp backend/.env.example backend/.env
-# set MONGO_URI to your cluster, using a read-only database user
-```
-
-### With Docker
-
-```bash
-docker compose up -d        # backend + frontend
-```
-
-http://localhost:5173. Source directories are bind-mounted, so backend reload
-and frontend HMR both work against your working tree, and `backend/.env` is read
-at run time rather than baked into the image.
-
-> Needs docker daemon access. On a permission error, either
-> `sudo usermod -aG docker $USER` and log out and back in, or run compose with `sudo`.
-
-### Without Docker
-
-```bash
-cd backend
-uv sync --extra dev
-uv run uvicorn app.main:app --reload --port 8000
-
-cd ../frontend
-npm install
-npm run dev            # http://localhost:5173
-```
-
-Vite proxies `/api` to port 8000, so the browser stays same-origin in development.
-
-You will see `[startup] skipping index creation: …` in the backend log. That is
-expected: it is the read-only user correctly being refused `createIndex`.
+Running it locally or adding to it? See **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 ---
 
-## Loading runs
+## Deployment
 
-Ingest is a separate, offline step that you run **from your machine**, with a
-read-write user — never from the deployed app. It handles wandb runs, shareable
-export folders, and a synthetic demo run.
-
-See **[backend/ingest/README.md](backend/ingest/README.md)**.
-
----
-
-## Database
-
-The app reads one MongoDB database and nothing else, so `MONGO_URI` is the only
-thing that changes between deployments.
-
-Two users, because the app should never be able to write:
-
-| user | role | used by |
+| | URL | Host |
 | --- | --- | --- |
-| app | `read` on the showcase DB | the backend, via `backend/.env` |
-| ingest | `readWrite` on the showcase DB | the ingest CLI, passed on the command line |
+| Frontend | https://growingnet.github.io/gromotion/ | GitHub Pages |
+| Backend | https://gromotion-production.up.railway.app | Railway |
 
-The browser never sees either connection string — it only calls the FastAPI
-backend, which holds the credential server-side.
+### Frontend - GitHub Pages
 
-### Working offline
+Deploys automatically. `.github/workflows/deploy.yml` builds and publishes on
+every push to `master` that touches `frontend/`, and can be run by hand from the
+Actions tab.
 
-If you need to run without the hosted cluster, either start the bundled mongo:
+The backend URL comes from the `VITE_API_BASE` repository variable
+(Settings → Secrets and variables → Actions → **Variables**), so it can be
+changed without touching the code. It is a public URL, not a secret - Vite
+inlines every `VITE_*` value into the JavaScript served to the browser. The
+build fails with a clear error if the variable is unset, rather than shipping a
+bundle that quietly calls the wrong host.
 
-```bash
-docker compose --profile local-db up -d     # then MONGO_URI=mongodb://mongo:27017
-```
+Because the value is baked in at build time, changing it needs a rebuild, not
+just a restart.
 
-or run a local `mongod` with no root required — download the MongoDB community
-tarball and `bin/mongod --dbpath <dir> --port 27017`, then point `MONGO_URI` at
-`mongodb://localhost:27017`. Either way you will need to ingest a run into it,
-and the same connection string can act as both users.
+Pages serves the site from `/gromotion/`, which is why `vite.config.ts` sets
+`base` for builds.
 
----
+### Backend - Railway
 
-## Configuration
+**Must be redeployed manually from the Railway dashboard after any change** -
+pushing to `master` does not deploy it.
 
-`backend/.env` (see `.env.example`) — read both by the backend directly and by
-docker compose, so there is one source of truth:
+The service's root directory is `backend/`, and it builds from
+`backend/Dockerfile`. Its variables:
 
 ```ini
 MONGO_URI=mongodb+srv://app_readonly:PASSWORD@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
 MONGO_DB=gromotion
-CORS_ORIGINS=http://localhost:5173
+CORS_ORIGINS=http://localhost:5173,https://growingnet.github.io
 ```
 
-It is gitignored and excluded from the Docker image.
+`CORS_ORIGINS` must list the deployed frontend origin - scheme and host only, no
+path and no trailing slash. The allowed origins are read once at startup, so a
+change to this variable takes effect only after a redeploy.
+
+The container binds the `$PORT` Railway assigns it. `/api/health` is the
+healthcheck path; it deliberately touches nothing but the process itself, so a
+green healthcheck says the service is up, not that MongoDB is reachable.
 
 ---
 
@@ -125,7 +86,7 @@ It is gitignored and excluded from the Docker image.
 
 **Keyboard**: `space` play/pause, `←` / `→` step.
 
-**Chart x-axis** can be epoch, growth step, or **parameters** — the last plots
+**Chart x-axis** can be epoch, growth step, or **parameters** - the last plots
 accuracy against model size, which is the view that shows whether growing
 reaches a given accuracy more cheaply.
 
@@ -141,8 +102,8 @@ Two decisions do most of the work:
 (largest) graph, and each step renders a subset at those fixed coordinates. If
 layout were recomputed per step, adding one node would shift every other node
 and growth would read as noise. Every node and edge that will ever exist is
-mounted from the start — future ones are transparent, leaving a dashed ring to
-show the space held open for them — so the camera is framed once and never
+mounted from the start - future ones are transparent, leaving a dashed ring to
+show the space held open for them - so the camera is framed once and never
 drifts.
 
 **Node boxes are a fixed size.** Channel count is shown by scaling an inner
@@ -151,7 +112,7 @@ disc, so a widening layer never perturbs the layout.
 Colour is reserved almost entirely for growth events: green for structural
 additions, amber for a widened node. Note that gromo marks *every* edge of a
 graph as retrained whenever that graph grows, so "retrained" is deliberately
-understated — otherwise it would drown out the handful of genuinely new
+understated - otherwise it would drown out the handful of genuinely new
 connections. Because consecutive DAGs share a tensor, widening one graph's `end`
 node is mirrored onto the next graph's `start` node.
 
@@ -166,11 +127,11 @@ draw the full curve faintly so the axis domain never rescales mid-playback.
 
 ```
 backend/
-  app/          FastAPI service — reads MongoDB only, never imports wandb or torch
+  app/          FastAPI service - reads MongoDB only, never imports wandb or torch
     routers/
       runs.py       GET /api/runs, GET /api/runs/{id}/bundle
-      training.py   planned live-training endpoints (501 — see below)
-  ingest/       offline CLI; sources: wandb, folder, demo — see its README
+      training.py   planned live-training endpoints (501 - see below)
+  ingest/       offline CLI; sources: wandb, folder, demo - see its README
   tests/
 frontend/
   src/
@@ -180,18 +141,18 @@ frontend/
     components/
 ```
 
-A whole run is served as one `bundle` response (a few hundred KB — the graphs are
+A whole run is served as one `bundle` response (a few hundred KB - the graphs are
 small), so scrubbing and speed changes never touch the network.
 
 ---
 
 ## Planned: training in the browser
 
-Not implemented. The shape it slots into is already in place —
+Not implemented. The shape it slots into is already in place -
 see `backend/app/routers/training.py`, which returns 501 with the intended contract:
 
 - a live run writes into the same `runs` / `steps` / `series` collections with
-  `status="running"`, so the player needs no new rendering path — a live run is
+  `status="running"`, so the player needs no new rendering path - a live run is
   just a run whose step list keeps growing;
 - `POST /api/training/jobs` accepts an uploaded dataset plus a growth config and
   returns a job id;
